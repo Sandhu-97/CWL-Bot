@@ -3,3 +3,7 @@
 *.pyc
 *.lock
 *.replit
+*.nix
+*.toml
+__pycache__/
+venv/

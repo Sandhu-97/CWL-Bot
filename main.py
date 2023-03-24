@@ -101,6 +101,7 @@ async def channel(ctx, league:str, week:str, clan1:str, clan2:str):
         channel = await league_category.create_text_channel(f'{week} {clan1} {clan2}')
     except:
         await ctx.send('`Unable to create channel`')
+        main_logger.exception('Cannot create channel - cwl channel')
         return
     await ctx.send(f'`Success! Channel created at `<#{channel.id}>')
 
