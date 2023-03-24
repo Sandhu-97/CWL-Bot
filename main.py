@@ -177,7 +177,24 @@ async def interview(ctx, user: discord.Member):
         return
     
     await admin_channel.send(f"```Name: {name}#{disc}\nId: {id}\nCreated at: {created_at[:19]}```")
-    await interview_channel.send('```questions here```')
+    await interview_channel.send('''```
+Welcome and congratulations for advancing to the next step of the admin application! Currently we are looking for admins who are active, driven and willing to work. 
+
+Please take a few moments to read through the questions and provide a thorough response. Some are similar to the application, but we are looking for a few more details. 
+
+• What strengths can you bring to the admin team?
+
+• Do you have any specific skills that you may qualify you for this job? (E.g. Discord, warmatch, top ten attacker, Google sheets, Social media, Content creation, gfx)
+
+• What challenges do you see for yourself if you are selected as an admin?
+
+• If you could change any one thing in the CWL, what would it be and why?
+
+•Roughly how much time do you have to spend on discord, more specifically CWL?
+
+• What time zone are you from? 
+
+•Does it suit you to dedicate time and do a bigger task, or pop on and off during the day as needed?```''')
     await ctx.send('`processed`')
 
 @bot.event

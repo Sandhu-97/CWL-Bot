@@ -1,2 +1,5 @@
 *.log
 *.json
+*.pyc
+*.lock
+*.replit
