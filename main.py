@@ -11,6 +11,7 @@ from keep_alive import keep_alive
 gc = gspread.service_account(filename='credentials.json')
 mastersheet = gc.open_by_key('1FTcrMhe71MQoLhhtJfjOfhCVxKcnOAF2GnDKqiEKUtg')
 infosheet = mastersheet.worksheet('info')
+penaltysheet = mastersheet.worksheet('penalty')
 
 
 intents = discord.Intents.default()
@@ -115,18 +116,6 @@ async def addreps(ctx, channel: discord.TextChannel, *reps: discord.User):
     else:
         await ctx.send('`Success! Reps added in the channel`')
 
-# @bot.command()
-# async def delreps(ctx, channel: discord.TextChannel):
-#     members = channel.members
-
-#     for member in members:
-#         has_role = discord.utils.get(member.roles, name='Approved') is not None
-        
-#         if has_role:
-#             await channel.set_permissions(member, read_messages=False)
-#             await ctx.send(f'`Removed access from {member.name}`')
-#     await ctx.send('`processed`')
-
 @bot.command()
 async def delreps(ctx, channel:discord.TextChannel, *reps: discord.Member):
     for rep in reps:
@@ -197,6 +186,42 @@ Please take a few moments to read through the questions and provide a thorough r
 
 •Does it suit you to dedicate time and do a bigger task, or pop on and off during the day as needed?```''')
     await ctx.send('`processed`')
+
+@bot.command()
+async def penalty(ctx:commands.Context, clan:str, week:str, unrostered_players:int=0, suspended_players:int=0, behaviour_pp:int=0, late_spin:str='F', missed_spin:str='F'):
+    clan = clan.upper()
+    try:
+        clan_row = penaltysheet.find(clan, in_column=1).row
+    except:
+        await ctx.send('`Invalid Clan`')
+        return
+    
+    late_spin_pp, missed_spin_pp = 0, 0
+    if late_spin in ('T', 't', 'True', 'true'):
+        late_spin_pp = 2
+    if missed_spin in ('T', 't', 'True', 'true'):
+        missed_spin_pp = 4
+
+    unrostered_players_pp = unrostered_players * 2
+    suspended_players_pp = suspended_players * 2
+
+    total_pp = unrostered_players_pp + suspended_players_pp + behaviour_pp + late_spin_pp + missed_spin_pp
+    await ctx.send(f'''```
+Unrostered Players Penalty: {unrostered_players_pp}
+Suspended Players Penalty:  {suspended_players_pp}
+Behaviour Penalty:          {behaviour_pp}
+Late Spin Penalty:          {late_spin_pp}
+Missed Spin Penalty:        {missed_spin_pp}
+Total Penalty:              {total_pp}```''')
+
+    try:
+        col = int(week[1:])
+        penaltysheet.update_cell(clan_row, col+1, total_pp)
+    except:
+        await ctx.send('`Unable to edit sheet`')
+        main_logger.exception('unable to add pp to sheet')
+        return
+    await ctx.send('`Penalty points sheet has been updated`')
 
 @bot.event
 async def on_command_error(ctx, error):
