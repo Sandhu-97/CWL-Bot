@@ -5,6 +5,8 @@
 *.replit
 *.nix
 *.toml
+*.breakpoints
 __pycache__/
 venv/
-test.py
+config/
+.upm/
