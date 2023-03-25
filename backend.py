@@ -43,7 +43,6 @@ def get_rep_ids(worksheet: gspread.Worksheet, clan1: str, clan2: str):
 async def create_channel(ctx: commands.Context ,category: discord.CategoryChannel, channelname, *reps):
     try:
         channel = await category.create_text_channel(channelname)
-        await channel.send('add reps hereee')
     except:
         backend_logger.exception('unable to create channel')
 
