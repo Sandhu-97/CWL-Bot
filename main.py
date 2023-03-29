@@ -223,6 +223,31 @@ Total Penalty:              {total_pp}```''')
         return
     await ctx.send('`Penalty points sheet has been updated`')
 
+
+@bot.command()
+async def delchannels(ctx, *channels:discord.TextChannel):
+    try:
+        for channel in channels:
+            await channel.delete()
+            await ctx.send(f'`#{channel.name} under {channel.category.name.upper()} has been deleted`')
+    except:
+        await ctx.send(f'`Unable to delete {channel.name} under {channel.category.name.upper()}`')
+        main_logger.exception('UNABLE TO DELETE CHANNEL')
+
+@bot.command()
+async def delcategory(ctx, category:discord.CategoryChannel):
+    channels = category.text_channels
+    if channels:
+        try:
+            for channel in channels:
+                await channel.delete()
+                await ctx.send(f'`#{channel.name} under {category.name.upper()} has been deleted`')
+        except:
+            await ctx.send(f'`Unable to delete {channel.name} under {category.name.upper()}`')
+            main_logger.exception('UNABLE TO DELETE CHANNEL')
+    await ctx.send(f'`Deleted category {category.name.upper()}`')
+    await category.delete()
+    
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
@@ -237,8 +262,11 @@ async def on_command_error(ctx, error):
     if isinstance(error, gspread.WorksheetNotFound):
         message = '`ERROR: Invalid League Name`'
         main_logger.exception('WORKSHEET NOT FOUND')
+    if isinstance(error, commands.MissingPermissions):
+        message = '`ERROR: Missing Permissions`'
 
     await ctx.send(message)
+
 token = os.environ['TOKEN']   
 async def main():
     keep_alive()
@@ -248,5 +276,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
-
-    
