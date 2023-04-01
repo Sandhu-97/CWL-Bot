@@ -61,3 +61,27 @@ async def add_user_to_channel(channel: discord.TextChannel, user:discord.User):
     except:
         backend_logger.exception('cannot add user to the channel')
 
+def get_league_logo(league):
+    apex_logo = 'https://cdn.discordapp.com/attachments/870356776363651142/1083676307851849818/CWLSM_APEX.png'
+    lite_logo = 'https://cdn.discordapp.com/attachments/869641717702348880/1083676221767954432/CWL_SPRING_LITE.png'
+    elite_logo = 'https://cdn.discordapp.com/attachments/823233935202582558/1083676380417507358/CWL_SPRING_ELITE.png'
+    elite1_logo = 'https://cdn.discordapp.com/attachments/823234560137232464/1083676352760258640/CWL_SPRING_ELITE_ONE.png'
+
+    if league == 'apex':
+        return apex_logo
+    elif league == 'lite':
+        return lite_logo
+    if league == 'elite':
+        return elite_logo
+    elif league == 'elite1':
+        return elite1_logo
+
+def get_league_default(league):
+    if league == 'apex':
+        return 'Friday - Saturday'
+    elif league == 'lite':
+        return 'Friday - Saturday'
+    if league == 'elite':
+        return 'Saturday - Sunday'
+    elif league == 'elite1':
+        return 'Saturday - Sunday'

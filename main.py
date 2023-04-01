@@ -1,11 +1,12 @@
 import os
+import pandas
 import discord
 from discord.ext import commands
 import asyncio
 import gspread
 import time
 from custom_logger import main_logger
-from backend import get_category, add_reps, rep_overwrite, add_user_to_channel
+from backend import get_category, add_reps, rep_overwrite, add_user_to_channel, get_league_default, get_league_logo
 from keep_alive import keep_alive
 
 gc = gspread.service_account(filename='credentials.json')
@@ -13,6 +14,9 @@ mastersheet = gc.open_by_key('1FTcrMhe71MQoLhhtJfjOfhCVxKcnOAF2GnDKqiEKUtg')
 infosheet = mastersheet.worksheet('info')
 penaltysheet = mastersheet.worksheet('penalty')
 
+abbs = infosheet.col_values(3)[1:]
+reps = infosheet.get('D2:F75')
+df = pandas.DataFrame(data=reps, index=abbs, columns=['clan', 'rep1', 'rep2'])
 
 intents = discord.Intents.default()
 intents.members = True
@@ -29,66 +33,127 @@ async def ping(ctx):
     await ctx.send('`pong`')
 
 @bot.command()
-async def createall(ctx, league:str, week:str):
-    await ctx.send('processing')
+async def createall(ctx:commands.Context, league:str, week:str):
+    await ctx.send('***processing***')
     try:
         leaguesheet = mastersheet.worksheet(league)
     except:
         return
     
     weeks_cells = leaguesheet.findall(week, None, 3)
-    league_category = get_category(bot, leaguesheet)
+    category_name = f'{league.upper()} Week {week[1:]}'
+
+    try:    
+        guild = ctx.guild
+        cat = await guild.create_category(name=category_name)
+    except:
+        await ctx.send('`ERROR: Unable to create category`')
+        return
+    
+    everyone_role = discord.utils.get(guild.roles, id=1070556590505209897)
+    applicant_role = discord.utils.get(guild.roles, name="applicant")
+    admin_role = discord.utils.get(guild.roles, name='league admin')
+    admin_overwrite = rep_overwrite()
+
+    try:
+        await cat.set_permissions(guild.me, overwrite=rep_overwrite())
+        await cat.set_permissions(applicant_role, read_messages=False)
+        await cat.set_permissions(admin_role, overwrite=admin_overwrite)
+        await cat.set_permissions(everyone_role, read_messages=False)
+    except Exception as e:
+        await ctx.send('error')
+        return
 
     for cell in weeks_cells:
         row = cell.row
         clan1 = leaguesheet.cell(row, 4).value
         clan2 = leaguesheet.cell(row, 5).value
 
-        clan1_row = infosheet.find(clan1, in_row=None, in_column=3).row
-        clan1_rep1_id = infosheet.cell(clan1_row, 5).value
-        clan1_rep2_id = infosheet.cell(clan1_row, 6).value
+        clan1name = df.loc[clan1]['clan']
+        clan2name = df.loc[clan2]['clan']
 
-        clan2_row = infosheet.find(clan2, in_row=None, in_column=3).row
-        clan2_rep1_id = infosheet.cell(clan2_row, 5).value
-        clan2_rep2_id = infosheet.cell(clan2_row, 6).value
+        rep1_id = df.loc[clan1]['rep1']
+        rep2_id = df.loc[clan1]['rep2']
+        rep3_id = df.loc[clan2]['rep1']
+        rep4_id = df.loc[clan2]['rep2']
 
-        overwrite = rep_overwrite()
-        found_reps = False
+        rep2, rep4 = '', ''
         try:
-            clan1_rep1 = await bot.fetch_user(int(clan1_rep1_id))
-            clan1_rep2 = ''
-            if clan1_rep2_id:
-                clan1_rep2 = await bot.fetch_user(int(clan1_rep2_id))
-            clan2_rep1 = await bot.fetch_user(int(clan2_rep1_id))
-            clan2_rep2 = ''
-            if clan2_rep2_id:
-                clan2_rep2 = await bot.fetch_user(int(clan2_rep2_id))
-            found_reps = True
+            rep1 = await bot.fetch_user(rep1_id)
+        except:
+            await ctx.send(f'`ERROR: Unable to find {clan1} rep with id {rep1_id}`')
+        try:
+            if rep2_id:
+                rep2 = await bot.fetch_user(rep2_id)
+        except:
+            await ctx.send(f'`ERROR: Unable to find {clan1} rep with id {rep2_id}`')
+        try:
+            rep3 = await bot.fetch_user(rep3_id)
+        except:
+            await ctx.send(f'`ERROR: Unable to find {clan2} rep with id {rep3_id}`')
+        try:
+            if rep4_id:
+                rep4 = await bot.fetch_user(rep4_id)
+        except:
+            await ctx.send(f'`ERROR: Unable to find {clan2} rep with id {rep4_id}`')
+
+        try:
+            channel = await cat.create_text_channel(f'{week} {clan1} {clan2}')
+            logo_url = get_league_logo(league)
+            default = get_league_default(league)
+
+            embed = discord.Embed(title=f'{clan1name} vs {clan2name}', description=f'**{league.upper()} Week {week[1:]}**', color=discord.Colour.dark_gold())
+            embed.set_thumbnail(url=logo_url)
+            embed.add_field(name='Default Day', value=default, inline=False)
 
         except:
-            await ctx.send(f'`Unable to find {clan1} {clan2} reps in the server`')
-        try:
-            nego_channel = await league_category.create_text_channel(f'{week} {clan1} {clan2}')
-
-        except:
-            await ctx.send(f'`Unable to create channel for {clan1} and {clan2}`')
-
-        try:
-            if found_reps:
-                await nego_channel.set_permissions(clan1_rep1, overwrite=overwrite)
-                await nego_channel.set_permissions(clan2_rep1, overwrite=overwrite)
-                
-            if clan1_rep2:
-                await nego_channel.set_permissions(clan1_rep2, overwrite=overwrite)
-            if clan2_rep2:
-                await nego_channel.set_permissions(clan2_rep2, overwrite=overwrite)
-        except:
-            await ctx.send('`Unable to add reps to the channel`')
-        await ctx.send(f'`channel created for {clan1} and {clan2}`')
-    await ctx.send('processed')
+            await ctx.send(f'`Cannot create channel for {clan1} and {clan2}`')
+            continue
+            reps_msg = ''
         
-    time.sleep(1)
+        if rep2 and rep4:
+            embed.add_field(name=f'{clan1} Reps', value=f'{rep1.name}#{rep1.discriminator}\n{rep2.name}#{rep2.discriminator}', inline=False)
+            embed.add_field(name=f'{clan2} Reps', value=f'{rep3.name}#{rep3.discriminator}\n{rep4.name}#{rep4.discriminator}', inline=False)
+            reps_msg = f'<{rep1.id}> <{rep2.id}> <{rep3.id}> <{rep4.id}>'
 
+        elif rep2 and not rep4:
+            embed.add_field(name=f'{clan1} Reps', value=f'{rep1.name}#{rep1.discriminator}\n{rep2.name}#{rep2.discriminator}', inline=False)
+            embed.add_field(name=f'{clan2} Reps', value=f'{rep3.name}#{rep3.discriminator}', inline=False)
+            reps_msg = f'<{rep1.id}> <{rep2.id}> <{rep3.id}>'
+
+        elif not rep2 and rep4:
+            embed.add_field(name=f'{clan1} Reps', value=f'{rep1.name}#{rep1.discriminator}', inline=False)
+            embed.add_field(name=f'{clan2} Reps', value=f'{rep3.name}#{rep3.discriminator}\n{rep4.name}#{rep4.discriminator}', inline=False)
+            reps_msg = f'<{rep1.id}> <{rep3.id}> <{rep4.id}>'
+
+        await channel.send(content=reps_msg,embed=embed)
+    
+        overwrite = rep_overwrite()
+        try:
+            if rep1:
+                await channel.set_permissions(rep1, overwrite=overwrite)
+        except:
+            await ctx.send(f'`Unable to add {clan1} rep 1 to the channel`')
+        try:
+            if rep2:
+                await channel.set_permissions(rep2, overwrite=overwrite)
+        except:
+            await ctx.send(f'`Unable to add {clan1} rep 2 to the channel`')
+        try:
+            if rep3:
+                await channel.set_permissions(rep3, overwrite=overwrite)
+        except:
+            await ctx.send(f'`Unable to add {clan2} rep 1 to the channel`')
+        try:
+            if rep4:
+                await channel.set_permissions(rep4, overwrite=overwrite)
+        except:
+            await ctx.send(f'`Unable to add {clan2} rep 2 to the channel`')
+        
+        e = discord.Embed(description=f'Channel created for **{clan1name}** and **{clan2name}** at <#{channel.id}>', color=discord.Colour.dark_gold())
+        await ctx.send(embed=e)
+    await ctx.send('***processed***')
+        
 @bot.command()
 async def channel(ctx, league:str, week:str, clan1:str, clan2:str):
     try:
@@ -270,7 +335,7 @@ async def on_command_error(ctx, error):
 token = os.environ['TOKEN']   
 async def main():
     keep_alive()
-    await bot.start(token)
+    await bot.start('OTM0MzIyODkwMzM2MjY4MzM5.Grdbm1.RINHbH_m3gAgRrVi5zmMuvkyCREuPN_IOjsy6I')
 if __name__ == "__main__":
     try:
         asyncio.run(main())
