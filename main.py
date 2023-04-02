@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import gspread
+import coc
 import time
 from custom_logger import main_logger
 from backend import get_category, add_reps, rep_overwrite, add_user_to_channel, get_league_default, get_league_logo
@@ -13,6 +14,8 @@ gc = gspread.service_account(filename='credentials.json')
 mastersheet = gc.open_by_key('1FTcrMhe71MQoLhhtJfjOfhCVxKcnOAF2GnDKqiEKUtg')
 infosheet = mastersheet.worksheet('info')
 penaltysheet = mastersheet.worksheet('penalty')
+adminsheet = mastersheet.worksheet('admins')
+
 
 abbs = infosheet.col_values(3)[1:]
 reps = infosheet.get('D2:F75')
@@ -28,9 +31,14 @@ bot = commands.Bot(command_prefix='cwl ', intents=intents)
 async def on_ready():
     print(bot.user, 'is ready')
 
+@bot.check
+async def is_admin(ctx):
+    admin_ids = adminsheet.col_values(2)
+    return str(ctx.author.id) in admin_ids
+
 @bot.command()
 async def ping(ctx):
-    await ctx.send('`pong`')
+    await ctx.send(f'`pong`')
 
 @bot.command()
 async def createall(ctx:commands.Context, league:str, week:str):
@@ -333,9 +341,17 @@ async def on_command_error(ctx, error):
     await ctx.send(message)
 
 token = os.environ['TOKEN']   
+coc_email = os.environ['COC_EMAIL']
+coc_password = os.environ['COC_PASSWORD']
+
 async def main():
-    keep_alive()
-    await bot.start('OTM0MzIyODkwMzM2MjY4MzM5.Grdbm1.RINHbH_m3gAgRrVi5zmMuvkyCREuPN_IOjsy6I')
+    async with coc.Client() as coc_client:
+        try:
+            await coc_client.login(coc_email, coc_password)
+        except coc.InvalidCredentials as error:
+            exit(error)
+
+        await bot.start(token)
 if __name__ == "__main__":
     try:
         asyncio.run(main())
