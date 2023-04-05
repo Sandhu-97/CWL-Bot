@@ -22,7 +22,7 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='cwl ', intents=intents)
+bot = commands.Bot(command_prefix='brg ', intents=intents)
 
 @bot.event
 async def on_ready():
