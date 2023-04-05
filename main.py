@@ -114,17 +114,17 @@ async def createall(ctx:commands.Context, league:str, week:str):
         if rep2 and rep4:
             embed.add_field(name=f'{clan1} Reps', value=f'{rep1.name}#{rep1.discriminator}\n{rep2.name}#{rep2.discriminator}', inline=False)
             embed.add_field(name=f'{clan2} Reps', value=f'{rep3.name}#{rep3.discriminator}\n{rep4.name}#{rep4.discriminator}', inline=False)
-            reps_msg = f'<{rep1.id}> <{rep2.id}> <{rep3.id}> <{rep4.id}>'
+            reps_msg = f'<@{rep1.id}> <@{rep2.id}> <@{rep3.id}> <@{rep4.id}>'
 
         elif rep2 and not rep4:
             embed.add_field(name=f'{clan1} Reps', value=f'{rep1.name}#{rep1.discriminator}\n{rep2.name}#{rep2.discriminator}', inline=False)
             embed.add_field(name=f'{clan2} Reps', value=f'{rep3.name}#{rep3.discriminator}', inline=False)
-            reps_msg = f'<{rep1.id}> <{rep2.id}> <{rep3.id}>'
+            reps_msg = f'<@{rep1.id}> <@{rep2.id}> <@{rep3.id}>'
 
         elif not rep2 and rep4:
             embed.add_field(name=f'{clan1} Reps', value=f'{rep1.name}#{rep1.discriminator}', inline=False)
             embed.add_field(name=f'{clan2} Reps', value=f'{rep3.name}#{rep3.discriminator}\n{rep4.name}#{rep4.discriminator}', inline=False)
-            reps_msg = f'<{rep1.id}> <{rep3.id}> <{rep4.id}>'
+            reps_msg = f'<@{rep1.id}> <@{rep3.id}> <@{rep4.id}>'
 
         await channel.send(content=reps_msg,embed=embed)
     
